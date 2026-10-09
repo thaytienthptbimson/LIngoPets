@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LingoPets - Vùng Đất Chữ Cái</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #cbd5e1; /* Gray backdrop for desktop */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100dvh;
+            background: linear-gradient(180deg, #e0f2fe 0%, #fce7f3 100%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        @media (min-width: 450px) {
+            #app-container {
+                height: 85vh;
+                max-height: 850px;
+                border-radius: 40px;
+                border: 12px solid #ffffff;
+            }
+        }
+
+        .btn-candy {
+            transition: all 0.1s ease;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-candy:active {
+            transform: translateY(8px);
+            box-shadow: 0 0px 0 rgba(0,0,0,0);
+        }
+        
+        .btn-candy::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+
+        @keyframes bounce-pet {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.05); }
+        }
+        .animate-pet { animation: bounce-pet 2s infinite ease-in-out; }
+
+        @keyframes float-up {
+            0% { transform: translateY(100vh) translateX(0) scale(1); opacity: 1; }
+            25% { transform: translateY(60vh) translateX(-15px) scale(1); }
+            50% { transform: translateY(20vh) translateX(15px) scale(1); }
+            100% { transform: translateY(-30vh) translateX(0) scale(1); opacity: 1; }
+        }
+
+        .balloon-element {
+            position: absolute;
+            bottom: -150px;
+            width: 90px;
+            height: 110px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5rem;
+            cursor: pointer;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.15), 3px 6px 10px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+            z-index: 10;
+        }
+        .balloon-element:active { transform: scale(0.95); }
+
+        .balloon-element::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid currentColor;
+        }
+        .balloon-element::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 50px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 2px;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.5; filter: brightness(2); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .anim-pop { animation: pop 0.2s forwards !important; pointer-events: none; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            75% { transform: translateX(10px) rotate(5deg); }
+        }
+        .anim-shake { animation: shake 0.4s ease-in-out !important; }
+
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; }
+        .screen.active { display: flex; }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        
+        <!-- ==================== LOBBY SCREEN ==================== -->
+        <div id="screen-lobby" class="screen active">
+            <!-- Header: Stats -->
+            <div class="flex justify-between items-center p-5 pt-8 z-10">
+                <div class="bg-white/80 backdrop-blur-md rounded-full px-4 py-2 flex items-center space-x-2 shadow-sm border-2 border-white">
+                    <div class="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white font-bold text-sm">Lv.1</div>
+                    <span class="font-bold text-slate-700">Hi, Kiddo!</span>
+                </div>
+                <div class="flex gap-2">
+                    <!-- Stars -->
+                    <div class="bg-yellow-100 border-2 border-yellow-300 rounded-full px-3 py-1 flex items-center shadow-sm">
+                        <span class="text-xl mr-1">⭐</span>
+                        <span id="ui-stars" class="font-bold text-yellow-600">0</span>
+                    </div>
+                    <!-- Food -->
+                    <div class="bg-orange-100 border-2 border-orange-300 rounded-full px-3 py-1 flex items-center shadow-sm">
+                        <span class="text-xl mr-1">🍖</span>
+                        <span id="ui-food" class="font-bold text-orange-600">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col justify-center items-center relative z-10">
+                <div class="absolute w-72 h-72 bg-white opacity-40 rounded-full blur-3xl"></div>
+                
+                <!-- Pet Element -->
+                <div id="pet-character" class="text-[140px] animate-pet drop-shadow-2xl cursor-pointer transition-transform duration-300">
+                    🥚
+                </div>
+                
+                <div class="w-32 h-6 bg-black opacity-10 rounded-[50%] mt-4"></div>
+                <div class="mt-6 text-center">
+                    <h2 class="text-2xl font-black text-slate-700">Trứng Bí Ẩn</h2>
+                    <p class="text-slate-500 font-semibold text-sm bg-white/50 px-4 py-1 rounded-full mt-2">Cần 10 🍖 để nở!</p>
+                </div>
+            </div>
+
+            <!-- Lobby Buttons -->
+            <div class="p-6 pb-8 space-y-4 z-10">
+                <button onclick="startGame()" class="btn-candy w-full bg-gradient-to-b from-green-400 to-green-500 hover:from-green-300 hover:to-green-400 text-white font-black text-2xl py-4 rounded-3xl border-4 border-green-300 flex items-center justify-center gap-3">
+                    <span class="text-3xl">🎮</span> Chơi Ngay
+                </button>
+                <div class="flex gap-4">
+                    <button class="btn-candy flex-1 bg-purple-400 hover:bg-purple-300 text-white font-bold py-3 rounded-2xl border-b-4 border-purple-500 flex items-center justify-center gap-2">
+                        <span>🛒</span> Cửa Hàng
+                    </button>
+                    <button onclick="openParentLock()" class="btn-candy flex-1 bg-blue-400 hover:bg-blue-300 text-white font-bold py-3 rounded-2xl border-b-4 border-blue-500 flex items-center justify-center gap-2">
+                        <span>👨‍👩‍👧</span> Phụ Huynh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== GAME SCREEN ==================== -->
+        <div id="screen-game" class="screen bg-gradient-to-b from-sky-300 to-blue-200">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-5 pt-8 z-20">
+                <button onclick="showScreen('screen-lobby')" class="w-12 h-12 bg-white/40 hover:bg-white/70 backdrop-blur rounded-full flex items-center justify-center text-slate-700 font-black text-xl transition shadow-sm">
+                    ✕
+                </button>
+                
+                <!-- Game Progress Bar -->
+                <div class="flex-1 mx-4 bg-white/30 rounded-full h-4 border-2 border-white/50 overflow-hidden relative">
+                    <div id="game-progress" class="bg-gradient-to-r from-yellow-300 to-yellow-400 h-full w-0 transition-all duration-500"></div>
+                </div>
+
+                <div class="bg-white rounded-full px-3 py-1 font-bold text-sky-600 flex items-center shadow-md">
+                    ⭐ <span id="game-current-score" class="ml-1">0</span>
+                </div>
+            </div>
+
+            <!-- Target Word Display -->
+            <div class="mx-6 mt-2 bg-white rounded-[2rem] p-5 shadow-xl border-[6px] border-white flex flex-col items-center justify-center relative z-20">
+                <span class="absolute -top-4 bg-pink-400 text-white text-xs font-black uppercase px-3 py-1 rounded-full border-2 border-white shadow-sm">Tìm Hình Nhé!</span>
+                <div class="flex items-center space-x-4 mt-2">
+                    <h1 id="word-display" class="text-4xl sm:text-5xl font-black text-slate-700 tracking-wide uppercase">APPLE</h1>
+                    <button onclick="playTargetWordAudio()" class="w-12 h-12 bg-sky-100 hover:bg-sky-200 rounded-full flex items-center justify-center text-2xl shadow-inner border-2 border-sky-200 active:scale-90 transition">
+                        🔊
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Area for Balloons -->
+            <div id="game-area" class="flex-1 relative w-full h-full overflow-hidden mt-4">
+                <!-- Clouds -->
+                <div class="absolute top-10 -left-6 text-7xl opacity-50">☁️</div>
+                <div class="absolute top-32 right-[-20px] text-6xl opacity-50">☁️</div>
+                <!-- Balloons will be injected here via JS -->
+            </div>
+            
+            <!-- In-game Feedback Overlay -->
+            <div id="game-feedback" class="absolute inset-0 pointer-events-none flex items-center justify-center z-50 opacity-0 transition-opacity">
+                <div id="feedback-bubble" class="bg-white text-4xl font-black px-8 py-4 rounded-[3rem] shadow-2xl border-[6px] transform scale-50 transition-transform">
+                    Great!
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== VICTORY SCREEN ==================== -->
+        <div id="screen-victory" class="screen bg-gradient-to-t from-yellow-100 to-pink-100 justify-center items-center p-6 text-center z-40">
+            <div class="text-[100px] mb-4 animate-bounce">🏆</div>
+            <h1 class="text-4xl font-black text-pink-500 mb-2 drop-shadow-md">Hoàn Thành!</h1>
+            <p class="text-slate-600 font-bold text-lg mb-8">Bé làm rất tốt. Phần thưởng của bé đây!</p>
+            
+            <div class="flex gap-6 mb-10">
+                <div class="bg-white p-4 rounded-3xl shadow-lg border-4 border-yellow-200 flex flex-col items-center min-w-[100px]">
+                    <span class="text-4xl mb-2">⭐</span>
+                    <span class="text-2xl font-black text-yellow-500">+50</span>
+                </div>
+                <div class="bg-white p-4 rounded-3xl shadow-lg border-4 border-orange-200 flex flex-col items-center min-w-[100px]">
+                    <span class="text-4xl mb-2">🍖</span>
+                    <span class="text-2xl font-black text-orange-500">+5</span>
+                </div>
+            </div>
+
+            <button onclick="finishGame()" class="btn-candy w-full max-w-[250px] bg-blue-500 text-white font-black text-xl py-4 rounded-full border-b-8 border-blue-700">
+                Thu Thập & Về Nhà
+            </button>
+        </div>
+
+        <!-- ==================== PARENT LOCK MODAL ==================== -->
+        <div id="modal-parent-lock" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex-col items-center justify-center p-4">
+            <div class="bg-white w-full max-w-[320px] rounded-[2rem] p-6 text-center shadow-2xl scale-95 transition-transform" id="lock-box">
+                <div class="text-4xl mb-2">🔒</div>
+                <h3 class="text-xl font-bold text-slate-800 mb-1">Khu vực Phụ Huynh</h3>
+                <p class="text-sm text-slate-500 mb-6">Giải phép tính để tiếp tục</p>
+                
+                <div class="flex items-center justify-center space-x-3 mb-6">
+                    <span id="math-q" class="text-3xl font-black text-blue-600">5 + 7 =</span>
+                    <input type="number" id="math-a" class="w-20 h-14 bg-slate-100 border-4 border-slate-200 rounded-xl text-center text-2xl font-bold focus:border-blue-400 outline-none" placeholder="?">
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="closeParentLock()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold py-3 rounded-xl transition">Hủy</button>
+                    <button onclick="checkParentLock()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md transition">Vào</button>
+                </div>
+                <p id="lock-error" class="text-red-500 font-bold mt-3 text-sm opacity-0">Sai rồi, thử lại nhé!</p>
+            </div>
+        </div>
+
+        <!-- ==================== PARENT DASHBOARD ==================== -->
+        <div id="screen-parent-dash" class="screen bg-slate-50">
+            <div class="bg-blue-600 pt-10 pb-6 px-6 rounded-b-[2rem] shadow-md relative">
+                <button onclick="showScreen('screen-lobby')" class="absolute top-6 left-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-bold hover:bg-white/30 transition">
+                    ←
+                </button>
+                <h2 class="text-2xl font-black text-white text-center mt-2">Báo Cáo Học Tập</h2>
+                <p class="text-blue-200 text-center text-sm font-semibold mt-1">Tuần này</p>
+            </div>
+
+            <div class="p-6 overflow-y-auto pb-10 space-y-5">
+                <!-- Overview Stats -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                        <span class="text-3xl mb-1">⏱️</span>
+                        <span class="font-black text-slate-700 text-xl">45<span class="text-sm">p</span></span>
+                        <span class="text-xs font-bold text-slate-400">Thời gian học</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                        <span class="text-3xl mb-1">🎯</span>
+                        <span class="font-black text-green-500 text-xl">85%</span>
+                        <span class="text-xs font-bold text-slate-400">Độ chính xác</span>
+                    </div>
+                </div>
+
+                <!-- Skill bars -->
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4">Phân tích Kỹ năng</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1">
+                                <span class="text-slate-600 flex items-center gap-1"><span class="text-lg">📚</span> Từ vựng</span>
+                                <span class="text-blue-500">Tốt</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                <div class="bg-blue-400 h-full" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1">
+                                <span class="text-slate-600 flex items-center gap-1"><span class="text-lg">🎧</span> Nghe hiểu</span>
+                                <span class="text-green-500">Tuyệt vời</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                <div class="bg-green-400 h-full" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1">
+                                <span class="text-slate-600 flex items-center gap-1"><span class="text-lg">⚡</span> Phản xạ</span>
+                                <span class="text-orange-500">Khá</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                <div class="bg-orange-400 h-full" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mastered words -->
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-3">Từ đã học (Gần đây)</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-slate-100 rounded-lg text-sm font-bold text-slate-600">Apple 🍎</span>
+                        <span class="px-3 py-1 bg-slate-100 rounded-lg text-sm font-bold text-slate-600">Dog 🐶</span>
+                        <span class="px-3 py-1 bg-slate-100 rounded-lg text-sm font-bold text-slate-600">Sun ☀️</span>
+                        <span class="px-3 py-1 bg-slate-100 rounded-lg text-sm font-bold text-slate-600">Car 🚗</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        let userStars = 0;
+        let userFood = 0;
+        let currentLevel = 1;
+
+        // --- VOCABULARY BANK (Level 1) ---
+        const vocabBank = [
+            { word: 'APPLE', emoji: '🍎' },
+            { word: 'BANANA', emoji: '🍌' },
+            { word: 'CAT', emoji: '🐱' },
+            { word: 'DOG', emoji: '🐶' },
+            { word: 'SUN', emoji: '☀️' },
+            { word: 'CAR', emoji: '🚗' },
+            { word: 'TREE', emoji: '🌳' },
+            { word: 'BIRD', emoji: '🐦' },
+            { word: 'FISH', emoji: '🐟' },
+            { word: 'RED', emoji: '🔴' }
+        ];
+
+        // --- GAME STATE ---
+        const MAX_QUESTIONS = 5;
+        let currentQuestion = 0;
+        let currentGameScore = 0;
+        let targetVocab = null;
+        let gameActive = false;
+        let balloonsSpawned = [];
+        let respawnInterval;
+
+        // --- AUDIO CONTEXT (Synthesized Sound Effects) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playTone(freq, type, duration, vol=0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSfxCorrect() {
+            playTone(600, 'sine', 0.1);
+            setTimeout(() => playTone(800, 'sine', 0.2), 100);
+        }
+
+        function playSfxWrong() {
+            playTone(300, 'sawtooth', 0.3, 0.2);
+            setTimeout(() => playTone(250, 'sawtooth', 0.3, 0.2), 150);
+        }
+
+        // --- SPEECH SYNTHESIS ---
+        function speakWord(text) {
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9; // Slightly slower for kids
+                utterance.pitch = 1.2; // Higher pitch, friendlier
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function playTargetWordAudio() {
+            if (targetVocab) speakWord(targetVocab.word);
+        }
+
+        // --- NAVIGATION ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            // Clean up game if leaving
+            if(screenId !== 'screen-game') {
+                endGameRound();
+            }
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            // Must resume AudioContext on user gesture
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            currentQuestion = 0;
+            currentGameScore = 0;
+            document.getElementById('game-current-score').innerText = '0';
+            updateProgressBar();
+            
+            showScreen('screen-game');
+            nextQuestion();
+        }
+
+        function updateProgressBar() {
+            const pct = (currentQuestion / MAX_QUESTIONS) * 100;
+            document.getElementById('game-progress').style.width = `${pct}%`;
+        }
+
+        function nextQuestion() {
+            gameActive = true;
+            clearArea();
+            clearInterval(respawnInterval);
+
+            if (currentQuestion >= MAX_QUESTIONS) {
+                showVictory();
+                return;
+            }
+
+            // Pick a random word
+            const shuffled = [...vocabBank].sort(() => 0.5 - Math.random());
+            targetVocab = shuffled[0];
+            
+            // Update UI
+            document.getElementById('word-display').innerText = targetVocab.word;
+            
+            // Auto play voice
+            setTimeout(() => playTargetWordAudio(), 300);
+
+            // Generate options (1 correct, 2 wrong)
+            let options = [targetVocab.emoji, shuffled[1].emoji, shuffled[2].emoji];
+            options.sort(() => 0.5 - Math.random()); // Shuffle options
+
+            spawnBalloons(options);
+            
+            // If kid doesn't click, respawn balloons periodically
+            respawnInterval = setInterval(() => {
+                if(gameActive) spawnBalloons(options);
+            }, 6000); 
+        }
+
+        const balloonColors = [
+            { bg: 'bg-pink-400', color: '#f472b6' },
+            { bg: 'bg-yellow-400', color: '#facc15' },
+            { bg: 'bg-green-400', color: '#4ade80' },
+            { bg: 'bg-blue-400', color: '#60a5fa' },
+            { bg: 'bg-purple-400', color: '#c084fc' }
+        ];
+
+        function spawnBalloons(emojis) {
+            clearArea();
+            const gameArea = document.getElementById('game-area');
+            const positions = [15, 50, 85]; // X percents
+            positions.sort(() => 0.5 - Math.random());
+
+            emojis.forEach((emoji, index) => {
+                const bColor = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+                
+                const b = document.createElement('div');
+                b.className = `balloon-element ${bColor.bg}`;
+                b.style.left = `calc(${positions[index]}% - 45px)`;
+                b.style.color = bColor.color;
+                
+                // Animation settings
+                const duration = 4.5 + Math.random() * 2; // 4.5s to 6.5s
+                const delay = Math.random() * 0.5;
+                b.style.animation = `float-up ${duration}s linear ${delay}s forwards`;
+                
+                b.innerHTML = emoji;
+
+                // Interaction events (Touch & Click)
+                const handleTap = (e) => {
+                    e.preventDefault();
+                    if(!gameActive) return;
+                    checkAnswer(emoji, b);
+                };
+                
+                b.addEventListener('mousedown', handleTap);
+                b.addEventListener('touchstart', handleTap, {passive: false});
+
+                gameArea.appendChild(b);
+                balloonsSpawned.push(b);
+            });
+        }
+
+        function checkAnswer(selectedEmoji, balloonElement) {
+            if (selectedEmoji === targetVocab.emoji) {
+                // CORRECT
+                gameActive = false;
+                clearInterval(respawnInterval);
+                playSfxCorrect();
+                
+                // Animate pop
+                balloonElement.classList.add('anim-pop');
+                
+                // Confetti
+                const rect = balloonElement.getBoundingClientRect();
+                triggerConfetti((rect.left + rect.width/2)/window.innerWidth, (rect.top + rect.height/2)/window.innerHeight);
+
+                // Update score
+                currentGameScore += 10;
+                document.getElementById('game-current-score').innerText = currentGameScore;
+                
+                showFeedback("Great! ⭐", "text-green-500", "border-green-400");
+                
+                // Make other balloons float away faster or disappear
+                document.querySelectorAll('.balloon-element:not(.anim-pop)').forEach(el => {
+                    el.style.opacity = '0';
+                    el.style.transition = 'opacity 0.3s';
+                });
+
+                currentQuestion++;
+                updateProgressBar();
+
+                setTimeout(() => nextQuestion(), 1500);
+
+            } else {
+                // WRONG
+                playSfxWrong();
+                balloonElement.classList.remove('anim-shake');
+                void balloonElement.offsetWidth; // trigger reflow
+                balloonElement.classList.add('anim-shake');
+                showFeedback("Oops! 💦", "text-pink-500", "border-pink-400");
+            }
+        }
+
+        function showFeedback(text, textColor, borderColor) {
+            const overlay = document.getElementById('game-feedback');
+            const bubble = document.getElementById('feedback-bubble');
+            
+            bubble.className = `bg-white text-4xl font-black px-8 py-4 rounded-[3rem] shadow-2xl border-[6px] transform transition-transform ${textColor} ${borderColor}`;
+            bubble.innerText = text;
+            
+            overlay.classList.remove('opacity-0');
+            setTimeout(() => bubble.classList.remove('scale-50'), 10);
+            
+            setTimeout(() => {
+                overlay.classList.add('opacity-0');
+                bubble.classList.add('scale-50');
+            }, 1000);
+        }
+
+        function clearArea() {
+            const gameArea = document.getElementById('game-area');
+            gameArea.innerHTML = ''; // Keep clouds by moving them outside or re-adding, wait clouds are outside if we use innerHTML carefully. 
+            // Better: remove only balloons
+            const balloons = gameArea.querySelectorAll('.balloon-element');
+            balloons.forEach(b => b.remove());
+            balloonsSpawned = [];
+        }
+
+        function endGameRound() {
+            gameActive = false;
+            clearInterval(respawnInterval);
+            clearArea();
+        }
+
+        function triggerConfetti(x, y) {
+            confetti({
+                particleCount: 50,
+                spread: 60,
+                origin: { x, y },
+                colors: ['#f472b6', '#facc15', '#4ade80', '#60a5fa']
+            });
+        }
+
+        function showVictory() {
+            endGameRound();
+            showScreen('screen-victory');
+            playSfxCorrect();
+            setTimeout(() => {
+                confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+            }, 300);
+        }
+
+        function finishGame() {
+            // Add rewards
+            userStars += 50;
+            userFood += 5;
+            
+            // Update UI
+            document.getElementById('ui-stars').innerText = userStars;
+            document.getElementById('ui-food').innerText = userFood;
+            
+            // Check Pet evolution logic (Mock)
+            if(userFood >= 10) {
+                document.getElementById('pet-character').innerText = '🐣'; // Hatched!
+                document.querySelector('#screen-lobby h2').innerText = 'Gà Con Đáng Yêu';
+                document.querySelector('#screen-lobby p').innerText = 'Đã nở thành công!';
+            }
+
+            showScreen('screen-lobby');
+        }
+
+        // --- PARENT LOCK LOGIC ---
+        let currentLockAnswer = 0;
+        
+        function openParentLock() {
+            const modal = document.getElementById('modal-parent-lock');
+            const box = document.getElementById('lock-box');
+            
+            // Generate math problem
+            const num1 = Math.floor(Math.random() * 10) + 1;
+            const num2 = Math.floor(Math.random() * 10) + 1;
+            currentLockAnswer = num1 + num2;
+            
+            document.getElementById('math-q').innerText = `${num1} + ${num2} =`;
+            document.getElementById('math-a').value = '';
+            document.getElementById('lock-error').style.opacity = '0';
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => box.classList.remove('scale-95'), 10);
+        }
+
+        function closeParentLock() {
+            const modal = document.getElementById('modal-parent-lock');
+            const box = document.getElementById('lock-box');
+            box.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 150);
+        }
+
+        function checkParentLock() {
+            const val = parseInt(document.getElementById('math-a').value);
+            if (val === currentLockAnswer) {
+                closeParentLock();
+                showScreen('screen-parent-dash');
+            } else {
+                const err = document.getElementById('lock-error');
+                err.style.opacity = '1';
+                document.getElementById('lock-box').classList.add('anim-shake');
+                setTimeout(() => document.getElementById('lock-box').classList.remove('anim-shake'), 400);
+            }
+        }
+
+        // Add fun interaction to Lobby pet
+        document.getElementById('pet-character').addEventListener('click', function() {
+            this.style.transform = 'scale(1.2) translateY(-20px)';
+            playTone(400, 'sine', 0.1);
+            setTimeout(() => this.style.transform = '', 200);
+        });
+
+    </script>
+</body>
+</html>
