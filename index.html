@@ -138,6 +138,13 @@
 
         .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; }
         .screen.active { display: flex; }
+        .btn-card{background:#fff;border-radius:1.5rem;padding:1rem;border:4px solid #fff;box-shadow:0 6px 0 rgba(0,0,0,.12);font-weight:900;color:#334155;transition:transform .1s;display:flex;align-items:center;justify-content:center;text-align:center}
+        .btn-card:active{transform:translateY(5px);box-shadow:none}
+        .btn-card.sm{padding:.25rem;border-radius:1rem}
+        .hole{height:90px;border-radius:50%;background:radial-gradient(#78350f,#451a03);font-size:3rem;box-shadow:inset 0 8px 0 rgba(0,0,0,.4)}
+        .marq{display:inline-block;padding-left:100%;animation:marq 14s linear infinite}
+        @keyframes marq{to{transform:translateX(-100%)}}
+        @keyframes fall{to{top:105%}}
     </style>
 </head>
 <body>
@@ -149,7 +156,7 @@
             <!-- Header: Stats -->
             <div class="flex justify-between items-center p-5 pt-8 z-10">
                 <div class="bg-white/80 backdrop-blur-md rounded-full px-4 py-2 flex items-center space-x-2 shadow-sm border-2 border-white">
-                    <div class="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white font-bold text-sm">Lv.1</div>
+                    <div id="ui-lv" class="min-w-8 h-8 px-1 bg-blue-400 rounded-full flex items-center justify-center text-white font-bold text-sm">Lv.1</div>
                     <span class="font-bold text-slate-700">Hi, Kiddo!</span>
                 </div>
                 <div class="flex gap-2">
@@ -181,13 +188,14 @@
                 </div>
             </div>
 
+            <div id="marquee" class="hidden mx-6 mb-2 bg-yellow-100 border-2 border-yellow-300 rounded-full overflow-hidden z-10"><div class="marq whitespace-nowrap py-2 font-black text-pink-600">🛒 Phụ huynh bấm vào Cửa hàng để mua thêm. 🛒 Phụ huynh bấm vào Cửa hàng để mua thêm. 🛒</div></div>
             <!-- Lobby Buttons -->
             <div class="p-6 pb-8 space-y-4 z-10">
-                <button onclick="startGame()" class="btn-candy w-full bg-gradient-to-b from-green-400 to-green-500 hover:from-green-300 hover:to-green-400 text-white font-black text-2xl py-4 rounded-3xl border-4 border-green-300 flex items-center justify-center gap-3">
+                <button onclick="playBtn()" class="btn-candy w-full bg-gradient-to-b from-green-400 to-green-500 hover:from-green-300 hover:to-green-400 text-white font-black text-2xl py-4 rounded-3xl border-4 border-green-300 flex items-center justify-center gap-3">
                     <span class="text-3xl">🎮</span> Chơi Ngay
                 </button>
                 <div class="flex gap-4">
-                    <button class="btn-candy flex-1 bg-purple-400 hover:bg-purple-300 text-white font-bold py-3 rounded-2xl border-b-4 border-purple-500 flex items-center justify-center gap-2">
+                    <button id="btn-shop" onclick="openShop()" class="btn-candy flex-1 bg-purple-400 hover:bg-purple-300 text-white font-bold py-3 rounded-2xl border-b-4 border-purple-500 flex items-center justify-center gap-2">
                         <span>🛒</span> Cửa Hàng
                     </button>
                     <button onclick="openParentLock()" class="btn-candy flex-1 bg-blue-400 hover:bg-blue-300 text-white font-bold py-3 rounded-2xl border-b-4 border-blue-500 flex items-center justify-center gap-2">
@@ -233,12 +241,51 @@
                 <div class="absolute top-32 right-[-20px] text-6xl opacity-50">☁️</div>
                 <!-- Balloons will be injected here via JS -->
             </div>
+        </div>
+
             
             <!-- In-game Feedback Overlay -->
             <div id="game-feedback" class="absolute inset-0 pointer-events-none flex items-center justify-center z-50 opacity-0 transition-opacity">
                 <div id="feedback-bubble" class="bg-white text-4xl font-black px-8 py-4 rounded-[3rem] shadow-2xl border-[6px] transform scale-50 transition-transform">
                     Great!
                 </div>
+            </div>
+
+        <!-- ==================== LEVEL GAME SCREEN ==================== -->
+        <div id="screen-lv" class="screen bg-gradient-to-b from-sky-300 to-blue-200">
+            <div class="flex justify-between items-center p-5 pt-8 z-20">
+                <button onclick="leaveLv()" class="w-12 h-12 bg-white/40 hover:bg-white/70 backdrop-blur rounded-full flex items-center justify-center text-slate-700 font-black text-xl shadow-sm">✕</button>
+                <div class="flex-1 mx-4 bg-white/30 rounded-full h-4 border-2 border-white/50 overflow-hidden"><div id="lv-progress" class="bg-gradient-to-r from-yellow-300 to-yellow-400 h-full w-0 transition-all duration-500"></div></div>
+                <div class="bg-white rounded-full px-3 py-1 font-bold text-sky-600 shadow-md">⭐ <span id="lv-score">0</span></div>
+            </div>
+            <div class="mx-6 mt-3 bg-white rounded-[2rem] p-4 shadow-xl border-[6px] border-white text-center relative z-20">
+                <span id="lv-title" class="absolute -top-4 left-1/2 -translate-x-1/2 bg-pink-400 text-white text-xs font-black uppercase px-3 py-1 rounded-full border-2 border-white shadow-sm whitespace-nowrap"></span>
+                <div id="lv-ask" class="mt-2 text-3xl font-black text-slate-700 cursor-pointer min-h-[70px] flex flex-col items-center justify-center"></div>
+            </div>
+            <div id="lv-box" class="flex-1 relative overflow-hidden mt-4 flex items-center justify-center"></div>
+        </div>
+
+        <!-- ==================== LEVEL SELECT ==================== -->
+        <div id="screen-levels" class="screen">
+            <div class="bg-purple-500 pt-10 pb-5 px-6 rounded-b-[2rem] shadow-md relative">
+                <button onclick="showScreen('screen-lobby')" class="absolute top-6 left-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-bold">←</button>
+                <h2 class="text-2xl font-black text-white text-center mt-2">Chọn Level</h2>
+            </div>
+            <div id="lv-grid" class="grid grid-cols-5 gap-3 p-5 overflow-y-auto flex-1 content-start"></div>
+        </div>
+
+        <!-- ==================== SHOP PASSWORD MODAL ==================== -->
+        <div id="modal-shop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex-col items-center justify-center p-4">
+            <div id="shop-box" class="bg-white w-full max-w-[320px] rounded-[2rem] p-6 text-center shadow-2xl">
+                <div class="text-4xl mb-2">🛒</div>
+                <h3 class="text-xl font-bold text-slate-800 mb-1">Cửa Hàng</h3>
+                <p class="text-sm text-slate-500 mb-4">Phụ huynh nhập mật khẩu để mở khóa toàn bộ 50 level vĩnh viễn</p>
+                <input type="password" id="shop-pw" autocomplete="off" class="w-full h-14 bg-slate-100 border-4 border-slate-200 rounded-xl text-center text-xl font-bold focus:border-purple-400 outline-none mb-4" placeholder="Mật khẩu">
+                <div class="flex gap-3">
+                    <button onclick="closeShop()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold py-3 rounded-xl">Hủy</button>
+                    <button onclick="checkShop()" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-xl shadow-md">Mở khóa</button>
+                </div>
+                <p id="shop-err" class="text-red-500 font-bold mt-3 text-sm opacity-0">Sai mật khẩu, thử lại nhé!</p>
             </div>
         </div>
 
@@ -439,13 +486,13 @@
             document.getElementById(screenId).classList.add('active');
             
             // Clean up game if leaving
-            if(screenId !== 'screen-game') {
-                endGameRound();
-            }
+            if(screenId !== 'screen-game') { endGameRound(); }
+            if(screenId !== 'screen-lv') clr();
         }
 
         // --- GAME LOGIC ---
         function startGame() {
+            playing = 1;
             // Must resume AudioContext on user gesture
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
@@ -630,23 +677,15 @@
         }
 
         function finishGame() {
-            // Add rewards
             userStars += 50;
             userFood += 5;
-            
-            // Update UI
-            document.getElementById('ui-stars').innerText = userStars;
-            document.getElementById('ui-food').innerText = userFood;
-            
-            // Check Pet evolution logic (Mock)
-            if(userFood >= 10) {
-                document.getElementById('pet-character').innerText = '🐣'; // Hatched!
-                document.querySelector('#screen-lobby h2').innerText = 'Gà Con Đáng Yêu';
-                document.querySelector('#screen-lobby p').innerText = 'Đã nở thành công!';
-            }
-
-            showScreen('screen-lobby');
+            if (playing === reached && reached < 50) reached++;
+            save();
+            updateLobbyUI();
+            if (unlocked) { buildLevels(); showScreen('screen-levels'); }
+            else showScreen('screen-lobby');
         }
+
 
         // --- PARENT LOCK LOGIC ---
         let currentLockAnswer = 0;
@@ -699,6 +738,161 @@
             setTimeout(() => this.style.transform = '', 200);
         });
 
+
+        // ==================== 50 LEVELS ====================
+        const SAVE_KEY='lp_save';
+        let unlocked=false, reached=1, playing=1, LV=0, rd=0, lvScore=0, LK=false, tms=[], curSay='';
+        try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');userStars=s.st||0;userFood=s.fd||0;reached=s.rc||1;unlocked=!!s.ul;}catch(e){}
+        const save=()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify({st:userStars,fd:userFood,rc:reached,ul:unlocked}));}catch(e){}};
+        const $=id=>document.getElementById(id);
+        const shuf=a=>[...a].sort(()=>Math.random()-.5);
+        const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+        const clr=()=>{tms.forEach(t=>{clearTimeout(t);clearInterval(t)});tms=[];};
+        const T=(f,ms)=>{const t=setTimeout(f,ms);tms.push(t);return t;};
+        const I=(f,ms)=>{const t=setInterval(f,ms);tms.push(t);return t;};
+        const shake=el=>{el.classList.remove('anim-shake');void el.offsetWidth;el.classList.add('anim-shake');};
+        const LW=('APPLE🍎,BANANA🍌,CAT🐱,DOG🐶,SUN☀️,CAR🚗,TREE🌳,BIRD🐦,FISH🐟,STAR⭐,MOON🌙,BEAR🐻,LION🦁,COW🐮,PIG🐷,DUCK🦆,FROG🐸,BEE🐝,HAT🎩,BOOK📖,CAKE🍰,MILK🥛,EGG🥚,BUS🚌,BALL⚽,DRUM🥁,KEY🔑,BELL🔔,SHIP🚢,PLANE✈️,FLOWER🌸,HOUSE🏠,SHOE👟,GRAPE🍇,LEMON🍋,PIZZA🍕,HEART❤️,CLOCK🕐,ROBOT🤖,HORSE🐴,MONKEY🐵').split(',').map(s=>{const m=s.match(/^([A-Z]+)(.+)$/u);return{word:m[1],emoji:m[2]};});
+        const pickN=(n,ex)=>shuf(LW.filter(x=>x!==ex)).slice(0,n);
+        const SIM=[['🍎','🍅'],['🐶','🐺'],['🐱','🐯'],['😀','😃'],['🌞','🌝'],['🐵','🙈'],['🍋','🍌'],['⚽','🏀']];
+
+        const A={
+            box:null,
+            ask(h,say){$('lv-ask').innerHTML=h;curSay=say||'';if(say)T(()=>speakWord(say),300);},
+            ok(){if(LK)return;LK=true;playSfxCorrect();lvScore+=10;$('lv-score').innerText=lvScore;rd++;
+                $('lv-progress').style.width=(rd/ENG[(LV-2)%12].r*100)+'%';
+                showFeedback('Great! ⭐','text-green-500','border-green-400');
+                confetti({particleCount:40,spread:60,origin:{y:.6}});clr();T(nextRound,1300);},
+            bad(q){if(LK)return;playSfxWrong();if(!q)showFeedback('Oops! 💦','text-pink-500','border-pink-400');}
+        };
+
+        // chọn 1 đáp án đúng trong lưới
+        function choose(items,cols,cls){
+            A.box.innerHTML=`<div class="grid gap-4 w-full p-6" style="grid-template-columns:repeat(${cols},1fr)"></div>`;
+            const g=A.box.firstChild;
+            shuf(items).forEach(it=>{const b=document.createElement('button');b.className='btn-card '+(cls||'text-6xl');b.innerHTML=it.h;
+                b.onclick=()=>{if(LK)return;if(it.ok){b.style.background='#bbf7d0';A.ok();}else{shake(b);A.bad();}};g.appendChild(b);});
+        }
+        // xếp chữ / điền chữ thiếu
+        function letters(d,all){
+            const t=shuf(LW.filter(x=>x.word.length>=3&&x.word.length<=Math.min(3+Math.ceil(d/2),6)))[0],w=t.word.split('');
+            let hide=w.map((_,i)=>i);
+            if(!all)hide=shuf(hide).slice(0,Math.min(1+Math.floor(d/3),w.length-1)).sort((a,b)=>a-b);
+            const fill=w.map((c,i)=>hide.includes(i)?'':c);let p=0;
+            A.ask(`<div class="text-7xl">${t.emoji}</div><div id="slots" class="flex gap-2 justify-center mt-3"></div>`,t.word);
+            const draw=()=>{$('slots').innerHTML=fill.map((c,i)=>`<span class="w-10 h-14 rounded-xl border-4 ${i===hide[p]?'border-yellow-400 bg-yellow-50':'border-slate-200 bg-white'} text-3xl font-black flex items-center justify-center">${c}</span>`).join('');};
+            draw();
+            const extra=shuf('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(c=>!w.includes(c))).slice(0,all?Math.min(Math.floor(d/2),4):Math.min(2+Math.floor(d/2),6));
+            A.box.innerHTML='<div class="flex flex-wrap gap-3 justify-center p-6"></div>';
+            shuf([...hide.map(i=>w[i]),...extra]).forEach(c=>{const b=document.createElement('button');b.className='btn-card text-3xl';b.style.cssText='width:64px;height:64px';b.textContent=c;
+                b.onclick=()=>{if(LK||b.disabled)return;if(c===w[hide[p]]){b.disabled=true;b.style.opacity=.3;fill[hide[p]]=c;p++;playTone(500+p*50,'sine',.1);draw();if(p===hide.length)A.ok();}else{shake(b);A.bad(1);}};
+                A.box.firstChild.appendChild(b);});
+        }
+
+        const ENG=[
+          {n:'Nghe & Chọn Hình',r:5,f(d){const t=shuf(LW)[0];A.ask(`<span class="text-4xl uppercase">${t.word}</span> 🔊`,t.word);
+              choose([t,...pickN(Math.min(1+Math.ceil(d/2),5),t)].map(x=>({h:x.emoji,ok:x===t})),Math.min(2+Math.floor(d/4),3));}},
+          {n:'Hình Nào Chữ Nấy',r:5,f(d){const t=shuf(LW)[0];A.ask(`<span class="text-8xl">${t.emoji}</span>`,t.word);
+              const n=Math.min(1+Math.ceil(d/2),5);choose([t,...pickN(n,t)].map(x=>({h:x.word,ok:x===t})),2,'text-2xl');}},
+          {n:'Lật Thẻ Ghi Nhớ',r:2,f(d){const n=Math.min(2+Math.ceil(d/2),8),it=shuf(LW).slice(0,n),cards=shuf([...it,...it].map(x=>x.emoji));
+              A.ask('Tìm các cặp giống nhau!');A.box.innerHTML=`<div class="grid gap-3 w-full p-6" style="grid-template-columns:repeat(${n<=2?2:n===3?3:4},1fr)"></div>`;
+              let open=[],found=0,busy=false;
+              cards.forEach(e=>{const b=document.createElement('button');b.className='btn-card sm text-4xl';b.style.height='78px';b.textContent='❓';
+                  b.onclick=()=>{if(busy||b.dataset.f||open.includes(b))return;b.textContent=e;b.style.background='#fef9c3';open.push(b);playTone(450,'sine',.08);
+                      if(open.length<2)return;const[x,y]=open;
+                      if(x.textContent===y.textContent){[x,y].forEach(z=>{z.dataset.f=1;z.style.background='#bbf7d0'});open=[];playSfxCorrect();if(++found===n)A.ok();}
+                      else{busy=true;playSfxWrong();T(()=>{[x,y].forEach(z=>{z.textContent='❓';z.style.background='#fff'});open=[];busy=false;},800);}};
+                  A.box.firstChild.appendChild(b);});}},
+          {n:'Xếp Chữ Cái',r:4,f(d){letters(d,true);}},
+          {n:'Điền Chữ Thiếu',r:5,f(d){letters(d,false);}},
+          {n:'Hứng Quả Rơi',r:2,f(d){const t=pickN(1)[0],need=3+Math.floor(d/2),dur=Math.max(2,4.8-d*.28);let h=0;
+              const up=()=>A.ask(`Chạm <span class="text-5xl">${t.emoji}</span> &nbsp;${h}/${need}`);up();
+              I(()=>{if(LK)return;const e=Math.random()<.45?t:pickN(1,t)[0],el=document.createElement('div');
+                  el.className='absolute text-5xl cursor-pointer';el.textContent=e.emoji;el.style.cssText+=`;top:-60px;left:${rnd(4,78)}%;animation:fall ${dur}s linear forwards`;
+                  const tap=ev=>{ev.preventDefault();if(LK||el.dataset.x)return;el.dataset.x=1;el.classList.add('anim-pop');
+                      if(e===t){h++;up();playTone(700,'sine',.1);if(h>=need)A.ok();}else A.bad(1);};
+                  el.addEventListener('mousedown',tap);el.addEventListener('touchstart',tap,{passive:false});
+                  el.onanimationend=()=>el.remove();A.box.appendChild(el);},Math.max(550,1050-d*50));}},
+          {n:'Đập Chuột Chũi',r:2,f(d){const t=pickN(1)[0],need=4+Math.floor(d/2),show=Math.max(550,1300-d*80);let h=0;
+              const up=()=>A.ask(`Đập <span class="text-5xl">${t.emoji}</span> &nbsp;${h}/${need}`);up();
+              A.box.innerHTML='<div class="grid grid-cols-3 gap-4 p-8 w-full"></div>';
+              const hs=[...Array(9)].map(()=>{const b=document.createElement('button');b.className='hole';A.box.firstChild.appendChild(b);
+                  b.onclick=()=>{if(LK||!b.dataset.e)return;const ok=b.dataset.e===t.emoji;b.dataset.e='';
+                      if(ok){h++;up();b.textContent='💥';playTone(650,'square',.08);if(h>=need)A.ok();}else{b.textContent='💦';A.bad(1);}};return b;});
+              I(()=>{if(LK)return;const b=hs[rnd(0,8)];if(b.dataset.e)return;const e=Math.random()<.5?t:pickN(1,t)[0];b.dataset.e=e.emoji;b.textContent=e.emoji;
+                  T(()=>{b.dataset.e='';b.textContent='';},show);},show*.8+200);}},
+          {n:'Cộng Trừ Vui',r:5,f(d){const mx=Math.min(3+d*2,20);let a=rnd(1,mx),b=rnd(1,mx);const op=d>3&&Math.random()<.5?'-':'+';
+              if(op==='-'&&b>a)[a,b]=[b,a];const r=op==='+'?a+b:a-b;A.ask(`<b class="text-5xl">${a} ${op} ${b} = ?</b>`);
+              const s=new Set([r]);while(s.size<(d>5?4:3)){const x=r+rnd(-3,3);if(x>=0)s.add(x);}
+              choose([...s].map(v=>({h:v,ok:v===r})),2,'text-4xl');}},
+          {n:'Đếm Hình',r:5,f(d){const e=shuf(LW)[0].emoji,k=rnd(2,3+d);
+              A.ask(`<div class="text-4xl flex flex-wrap justify-center gap-1">${shuf(Array(k).fill(e)).join('')}</div>`);
+              const s=new Set([k]);while(s.size<(d>5?4:3)){const x=k+rnd(-2,2);if(x>0)s.add(x);}
+              choose([...s].map(v=>({h:v,ok:v===k})),2,'text-4xl');}},
+          {n:'Tìm Chú Lạ',r:5,f(d){const c=Math.min(2+Math.ceil(d/2),5),pr=d<=4?pickN(2).map(x=>x.emoji):shuf(SIM)[0];A.ask('Tìm hình khác biệt!');
+              const items=[...Array(c*c-1)].map(()=>({h:pr[0]})).concat([{h:pr[1],ok:true}]);choose(items,c,'text-4xl sm');}},
+          {n:'Nhớ Thứ Tự',r:2,f(d){const L=2+Math.ceil(d/2),E=['🐶','🐱','🐸','🐥'],C=['#f87171','#60a5fa','#4ade80','#facc15'],seq=[...Array(L)].map(()=>rnd(0,3));let pos=0,inp=false;
+              A.box.innerHTML='<div class="grid grid-cols-2 gap-5 p-8 w-full"></div>';
+              const pads=E.map((e,i)=>{const b=document.createElement('button');b.className='btn-card text-7xl';b.style.cssText=`background:${C[i]};opacity:.6;height:130px`;b.textContent=e;
+                  b.onclick=()=>{if(!inp||LK)return;fl(i);if(i===seq[pos]){if(++pos===L){inp=false;A.ok();}}else{inp=false;A.bad();T(play,1200);}};A.box.firstChild.appendChild(b);return b;});
+              const fl=i=>{playTone(300+i*120,'sine',.3);pads[i].style.opacity=1;pads[i].style.transform='scale(1.08)';T(()=>{pads[i].style.opacity=.6;pads[i].style.transform='';},350);};
+              const play=()=>{inp=false;pos=0;A.ask('Nhìn kỹ nhé 👀');seq.forEach((s,i)=>T(()=>fl(s),700*i+700));T(()=>{inp=true;A.ask('Đến lượt bé! 👆');},700*L+800);};play();}},
+          {n:'Số Theo Thứ Tự',r:4,f(d){const n=Math.min(3+d,12),nums=shuf([...Array(30)].map((_,i)=>i+1)).slice(0,n).sort((a,b)=>a-b);let p=0;
+              A.ask('Chạm số từ <u>nhỏ</u> đến <u>lớn</u>');A.box.innerHTML='<div class="grid grid-cols-4 gap-3 p-6 w-full"></div>';
+              shuf(nums).forEach(v=>{const b=document.createElement('button');b.className='btn-card text-3xl';b.style.height='70px';b.textContent=v;
+                  b.onclick=()=>{if(LK||b.disabled)return;if(v===nums[p]){b.disabled=true;b.style.background='#bbf7d0';playTone(400+p*60,'sine',.1);if(++p===n)A.ok();}else{shake(b);A.bad(1);}};
+                  A.box.firstChild.appendChild(b);});}}
+        ];
+
+        function nextRound(){
+            clr();const E=ENG[(LV-2)%12];
+            if(rd>=E.r){playing=LV;return showVictory();}
+            LK=false;A.box.innerHTML='';E.f(Math.ceil((LV-1)/5));
+        }
+        function startLevel(n){
+            if(audioCtx.state==='suspended')audioCtx.resume();
+            if(n===1){return startGame();}
+            if(!unlocked||n>reached)return;
+            LV=n;playing=n;rd=0;lvScore=0;LK=false;A.box=$('lv-box');
+            $('lv-score').innerText='0';$('lv-progress').style.width='0%';
+            $('lv-title').innerText=`Level ${n} · ${ENG[(n-2)%12].n}`;
+            showScreen('screen-lv');nextRound();
+        }
+        function leaveLv(){if(unlocked){buildLevels();showScreen('screen-levels');}else showScreen('screen-lobby');}
+        $('lv-ask').onclick=()=>curSay&&speakWord(curSay);
+
+        function buildLevels(){
+            const g=$('lv-grid');g.innerHTML='';
+            for(let n=1;n<=50;n++){const lk=n>reached,b=document.createElement('button');
+                b.className='btn-card text-xl';b.style.cssText='height:56px;padding:0'+(lk?';opacity:.4':'')+(n<reached?';background:#fef9c3':'')+(n===reached?';background:#bbf7d0':'');
+                b.innerHTML=lk?'🔒':n;b.onclick=()=>lk?playSfxWrong():startLevel(n);g.appendChild(b);}
+        }
+        function updateLobbyUI(){
+            $('ui-stars').innerText=userStars;$('ui-food').innerText=userFood;$('ui-lv').innerText='Lv.'+reached;
+            if(userFood>=10){$('pet-character').innerText='🐣';document.querySelector('#screen-lobby h2').innerText='Gà Con Đáng Yêu';document.querySelector('#screen-lobby p').innerText='Đã nở thành công!';}
+            $('marquee').classList.toggle('hidden',unlocked||reached<2);
+        }
+        function playBtn(){
+            if(audioCtx.state==='suspended')audioCtx.resume();
+            if(unlocked){buildLevels();showScreen('screen-levels');}else startGame();
+        }
+
+        // ---- Cửa hàng: mật khẩu mở khóa vĩnh viễn ----
+        const SHOP_PW=atob('dGllbmh1b25nMjgwMTE5ODE=');
+        function openShop(){
+            if(unlocked){buildLevels();return showScreen('screen-levels');}
+            $('shop-pw').value='';$('shop-err').style.opacity='0';
+            const m=$('modal-shop');m.classList.remove('hidden');m.classList.add('flex');setTimeout(()=>$('shop-pw').focus(),50);
+        }
+        function closeShop(){const m=$('modal-shop');m.classList.add('hidden');m.classList.remove('flex');}
+        function checkShop(){
+            if($('shop-pw').value.trim()===SHOP_PW){
+                unlocked=true;save();closeShop();playSfxCorrect();
+                confetti({particleCount:150,spread:100,origin:{y:.6}});
+                updateLobbyUI();buildLevels();showScreen('screen-levels');
+            }else{$('shop-err').style.opacity='1';shake($('shop-box'));playSfxWrong();}
+        }
+        $('shop-pw').addEventListener('keydown',e=>{if(e.key==='Enter')checkShop();});
+        updateLobbyUI();
     </script>
 </body>
 </html>
