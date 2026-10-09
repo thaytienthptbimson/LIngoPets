@@ -150,6 +150,7 @@
 <body>
 
     <div id="app-container">
+        <button id="btn-music" onclick="toggleMusic()" class="absolute top-1 right-3 z-[45] w-9 h-9 rounded-full bg-white/70 backdrop-blur shadow flex items-center justify-center text-lg active:scale-90 transition">🎵</button>
         
         <!-- ==================== LOBBY SCREEN ==================== -->
         <div id="screen-lobby" class="screen active">
@@ -472,6 +473,8 @@
                 utterance.lang = 'en-US';
                 utterance.rate = 0.9; // Slightly slower for kids
                 utterance.pitch = 1.2; // Higher pitch, friendlier
+                utterance.onend=utterance.onerror=()=>musicDuck(false);
+                musicDuck(true,4000);
                 window.speechSynthesis.speak(utterance);
             }
         }
@@ -893,6 +896,57 @@
         }
         $('shop-pw').addEventListener('keydown',e=>{if(e.key==='Enter')checkShop();});
         updateLobbyUI();
+
+        // ==================== NHẠC NỀN (tự tạo, không cần file) ====================
+        const musicGain=audioCtx.createGain();musicGain.gain.value=0.6;musicGain.connect(audioCtx.destination);
+        const CHORDS=[[261.63,329.63,392],[220,261.63,329.63],[174.61,220,261.63],[196,246.94,293.66]];
+        let musicOn=true,musicStarted=false,mTimer=null,mNext=0,mStep=0,duckT=null;
+        try{musicOn=localStorage.getItem('lp_music')!=='0';}catch(e){}
+        const BEAT=0.6;
+        function mNote(f,t,dur,type,vol){
+            const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+            o.type=type;o.frequency.value=f;
+            g.gain.setValueAtTime(0.0001,t);
+            g.gain.linearRampToValueAtTime(vol,t+Math.min(0.08,dur/3));
+            g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+            o.connect(g);g.connect(musicGain);o.start(t);o.stop(t+dur+0.05);
+        }
+        function mSchedule(){
+            while(mNext<audioCtx.currentTime+1.5){
+                const bar=Math.floor(mStep/8),ch=CHORDS[bar%4],i=mStep%8;
+                if(i===0)ch.forEach(f=>mNote(f/2,mNext,BEAT*4.2,'sine',0.035)); // nền hợp âm
+                if(i%2===0||Math.random()<.4){ // giai điệu nhẹ nhàng
+                    const f=ch[Math.floor(Math.random()*3)]*(Math.random()<.6?2:1);
+                    if(Math.random()<.85)mNote(f,mNext,BEAT*1.6,'triangle',0.045);
+                }
+                mNext+=BEAT/2;mStep++;
+            }
+        }
+        function musicStart(){
+            if(!musicOn||mTimer)return;
+            if(audioCtx.state==='suspended')audioCtx.resume();
+            mNext=audioCtx.currentTime+0.1;mTimer=setInterval(mSchedule,400);mSchedule();
+        }
+        function musicStop(){clearInterval(mTimer);mTimer=null;}
+        // hạ nhỏ nhạc khi đọc từ để nghe rõ
+        function musicDuck(on,maxMs){
+            clearTimeout(duckT);
+            musicGain.gain.setTargetAtTime(on?0.12:0.6,audioCtx.currentTime,0.08);
+            if(on&&maxMs)duckT=setTimeout(()=>musicDuck(false),maxMs);
+        }
+        function toggleMusic(){
+            musicOn=!musicOn;try{localStorage.setItem('lp_music',musicOn?'1':'0');}catch(e){}
+            if(musicOn)musicStart();else musicStop();
+            $('btn-music').innerText=musicOn?'🎵':'🔇';
+        }
+        $('btn-music').innerText=musicOn?'🎵':'🔇';
+        // trình duyệt chỉ cho phát âm thanh sau lần chạm đầu tiên
+        ['pointerdown','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,()=>{
+            if(!musicStarted){musicStarted=true;musicStart();}
+        },{once:false,passive:true}));
+        document.addEventListener('visibilitychange',()=>{
+            if(document.hidden)musicStop();else if(musicStarted&&musicOn)musicStart();
+        });
     </script>
 </body>
 </html>
